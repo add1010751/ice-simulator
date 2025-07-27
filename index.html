@@ -56,7 +56,7 @@
     <div class="progress-bar" id="pityBar">0%</div>
   </div>
   <p>累計保底次數：<span id="pityCount">0</span></p>
-  <p>總花費：<span id="totalCost">0</span> 元</p>
+  <p>總花費：<span id="totalCost">0</span> 元(48NT/抽)</p>
   <p>累積抽數：<span id="totalDraws">0</span> 次</p>
 
   <div id="recentSImages"></div>
@@ -171,7 +171,7 @@
         totalDraws++;
 
         if (pity >= 100) {
-          pity -= 100;
+          pity = 0;
           pityCount++;
           result += `🎉【保底達成！】🎉\n`;
         }
