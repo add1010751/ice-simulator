@@ -50,9 +50,13 @@
     <button onclick="draw(10)">10連抽</button>
     <button onclick="draw(30)">30連抽</button>
     <button onclick="draw(100)">100連抽</button>
-    <button onclick="draw(1000)">1000連抽</button>
     <button onclick="resetAll()">🔄 重置</button>
   </div>
+  <div class="controls">
+	<input type="number" id="customDrawCount" placeholder="輸入抽數" min="1" style="width: 80px; margin-left: 10px;" />
+	<button onclick="drawCustom()">連抽</button>
+  </div>
+  
   <div class="progress">
     <div class="progress-bar" id="pityBar">0%</div>
   </div>
@@ -183,7 +187,7 @@
         if (pity >= 100) {
           pity = 0;
           pityCount++;
-          resultArr.push(`🎉【保底達成！】🎉`);
+          resultArr.push(`🎉【保底${pityCount}次達成！】🎉`);
         }
       }
 
@@ -276,6 +280,34 @@
         return `<div>[${rarity}] ${name} - ${probPercent}%</div>`;
       }).join("");
     }
+	
+	function drawCustom() {
+	  const input = document.getElementById('customDrawCount');
+	  let count = parseInt(input.value, 10);
+
+	  if (isNaN(count) || count <= 0) {
+		alert("請輸入有效的正整數抽數");
+		return;
+	  }
+	  
+	  // 你也可以設定最大限制，例如10000
+	  
+	  if (count == 48763) {
+		alert("星爆氣流斬");
+		return;
+	  } else if (count == 114514) {
+		alert("いいよ！こいよ！");
+		return;
+	  } else if (count > 100000) {
+		alert("抽數不能超過100000");
+		return;
+	  }
+	  
+	  
+
+	  draw(count);
+	}
+
   </script>
 </body>
 </html>
