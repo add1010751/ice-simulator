@@ -255,6 +255,10 @@
 		}
 		return raritySums;
 	}
+	
+	function removeTrailingZeros(num) {
+	  return parseFloat(num.toString());
+	}
 
 	window.onload = () => {
 		const probDiv = document.getElementById("probabilitiesList");
@@ -262,8 +266,8 @@
 		  const rarity = item[2];
 		  const name = item[0];
 		  const prob = item[1];
-		  const probPercent = (prob * 100).toFixed(4);
-		  return `<div>[${rarity}] ${name}：${probPercent}%</div>`;
+		  const probPercent = removeTrailingZeros((prob * 100).toFixed(4));
+		  return `<div>[${rarity}] ${name} - ${probPercent}%</div>`;
 		}).join("");
 	}
   </script>
