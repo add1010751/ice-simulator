@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-tw">
+<head>
+  <meta charset="UTF-8" />
+  <title>冰機模擬器</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
+    h1 { text-align: center; }
+    .controls { text-align: center; margin-bottom: 20px; }
+    button { margin: 5px; padding: 10px 20px; font-size: 16px; }
+    #result { white-space: pre-line; background: white; padding: 10px; border-radius: 10px; border: 1px solid #ccc; max-height: 300px; overflow-y: auto; }
+    .progress { width: 100%; background-color: #ddd; border-radius: 5px; overflow: hidden; margin-top: 20px; }
+    .progress-bar { height: 20px; background-color: #4CAF50; width: 0%; text-align: center; color: white; }
+    #summary { background: white; padding: 10px; border-radius: 10px; border: 1px solid #ccc; max-height: 300px; overflow-y: auto; margin-top: 20px; }
+    li { margin-bottom: 3px; }
+    #recentSImages {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      padding: 6px;
+      background: white;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      max-height: 340px;
+      overflow-x: auto;
+    }
+    #recentSImages img {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background: #fff;
+      cursor: pointer;
+    }
+    #probabilities {
+      margin-top: 40px;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+    }
+    #bannerSelect { position: absolute; top: 10px; left: 10px; }
+  </style>
+</head>
+<body>
+  <select id="bannerSelect" onchange="switchBanner()"></select>
+  <h1 id="bannerTitle">冰機模擬器</h1>
+  <div class="controls">
+    <button onclick="draw(1)">單抽</button>
+    <button onclick="draw(10)">10連抽</button>
+    <button onclick="draw(30)">30連抽</button>
+    <button onclick="draw(100)">100連抽</button>
+    <button onclick="resetAll()">🔄 重置</button>
+  </div>
+  <div class="controls">
+    <input type="number" id="customDrawCount" placeholder="輸入抽數" min="1" style="width: 80px; margin-left: 10px;" />
+    <button onclick="drawCustom()">連抽</button>
+  </div>
+  <div class="progress">
+    <div class="progress-bar" id="pityBar">0%</div>
+  </div>
+  <p>保底次數：<span id="pityCount">0</span></p>
+  <p>累積抽數：<span id="totalDraws">0</span> 次</p>
+  <p>總花費：<span id="totalCost">0</span> 元 (48NT/抽)</p>
+  <h3>獲得的[S]道具</h3>
+  <div id="recentSImages"></div>
+  <h3>抽取紀錄</h3>
+  <div id="result"></div>
+  <h3>各獎項獲得次數統計</h3>
+  <ul id="summary"></ul>
+  <h3>各獎項機率</h3>
+  <div id="probabilities">
+    <ul id="probabilitiesList"></ul>
+  </div>
+
+<script>
+  // 獎池名稱列表（檔名，對應 banners/*.json）
+  const bannersList = ["厄瑞玻斯的哀歌", "薇塔芳塔娜", "深淵的存在"];
+
+  let currentBanner = bannersList[0];
+  let banners = {};  // 已載入的獎池資料
+  let items = [];
+  let pityRates = { S: 0.10, A: 0.15, B: 0.20, C: 0.40 };
+  let pity = 0, pityCount = 0, totalDraws = 0;
+  const costPerDraw = 48;
+  const stats = {};
+  const recentSImages = [], recentSNames = [];
+
+  // 初始化選單與預載首個獎池
+  function init() {
+    const select = document.getElementById("bannerSelect");
+    bannersList.forEach(b => {
+      const opt = document.createElement("option");
+      opt.value = b;
+      opt.textContent = b;
+      select.appendChild(opt);
+    });
+	
+	
+    loadBanner(currentBanner).then(() => {
+      switchBanner();
+    }).catch(err => alert("載入獎池失敗：" + err));
+  }
+
+  // fetch 載入獎池 json
+  function loadBanner(bannerKey) {
+    return fetch(`data/${bannerKey}.json`)
+      .then(res => {
+        if (!res.ok) throw new Error("無法載入 " + bannerKey + " json");
+        return res.json();
+      })
+      .then(data => {
+        banners[bannerKey] = data;
+      });
+  }
+
+  // 切換獎池
+  function switchBanner() {
+    const select = document.getElementById("bannerSelect");
+    currentBanner = select.value;
+
+    if (banners[currentBanner]) {
+      items = banners[currentBanner].items;
+      document.getElementById("bannerTitle").textContent = banners[currentBanner].title;
+      resetAll();
+      updateProbabilities();
+    } else {
+      loadBanner(currentBanner).then(() => {
+        items = banners[currentBanner].items;
+        document.getElementById("bannerTitle").textContent = banners[currentBanner].title;
+        resetAll();
+        updateProbabilities();
+      }).catch(err => alert("載入獎池失敗：" + err));
+    }
+  }
+
+  // 抽獎邏輯
+  function draw(times) {
+    let resultArr = [];
+    for (let i = 0; i < times; i++) {
+      const item = roll();
+      totalDraws++;
+      if (item[2] === "S" && item[3]) {
+        recentSImages.unshift(item[3]);
+        recentSNames.unshift(item[0]);
+      }
+      let line = item[2] === "S"
+        ? `<span style="color:red;">第${totalDraws}抽：[${item[2]}]${item[0]}</span>`
+        : `第${totalDraws}抽：[${item[2]}]${item[0]}`;
+      resultArr.push(line);
+      pity += pityRates[item[2]];
+      stats[item[0]] = (stats[item[0]] || 0) + 1;
+      if (pity >= 100) {
+        pity = 0;
+        pityCount++;
+        resultArr.push(`<span style="color:blue;">【保底${pityCount}次達成！】🎉</span>`);
+      }
+    }
+
+    // 最新抽獎顯示在上面
+    resultArr.reverse();
+    document.getElementById("result").innerHTML = resultArr.join("\n") + "<br>" + document.getElementById("result").innerHTML;
+
+    updateProgress();
+    updateStats();
+    updateDisplay();
+    updateRecentSImages();
+  }
+
+  // 根據機率滾抽獎品
+  function roll() {
+    const rand = Math.random();
+    let acc = 0;
+    for (const item of items) {
+      acc += item[1];
+      if (rand < acc) return item;
+    }
+    return items[items.length - 1];
+  }
+
+  // 更新進度條與數值
+  function updateProgress() {
+    document.getElementById("pityBar").style.width = pity + "%";
+    document.getElementById("pityBar").textContent = pity.toFixed(2) + "%";
+    document.getElementById("pityCount").textContent = pityCount;
+  }
+
+  // 更新各獎項統計
+  function updateStats() {
+    const summary = document.getElementById("summary");
+    summary.innerHTML = "";
+    for (const item of items) {
+      const name = item[0];
+      const rarity = item[2];
+      const count = stats[name];
+      if (count > 0) {
+        const li = document.createElement("li");
+        li.textContent = `[${rarity}] ${name} × ${count}`;
+        summary.appendChild(li);
+      }
+    }
+  }
+
+  // 更新抽數與花費顯示
+  function updateDisplay() {
+    document.getElementById("totalCost").textContent = totalDraws * costPerDraw;
+    document.getElementById("totalDraws").textContent = totalDraws;
+  }
+
+  // 顯示最近抽到的 S 道具圖片
+  function updateRecentSImages() {
+    const container = document.getElementById("recentSImages");
+    container.innerHTML = "";
+    for (let i = 0; i < recentSImages.length; i++) {
+      const img = document.createElement("img");
+      img.src = recentSImages[i];
+      img.title = recentSNames[i];
+      container.appendChild(img);
+    }
+  }
+
+  // 重置所有狀態
+  function resetAll() {
+    pity = 0; pityCount = 0; totalDraws = 0;
+    recentSImages.length = 0; recentSNames.length = 0;
+    for (const key in stats) stats[key] = 0;
+    document.getElementById("result").innerHTML = "";
+    updateProgress(); updateStats(); updateDisplay(); updateRecentSImages();
+  }
+
+  // 自訂抽數觸發
+  function drawCustom() {
+    const input = document.getElementById('customDrawCount');
+    let count = parseInt(input.value, 10);
+
+    if (isNaN(count) || count <= 0) {
+      alert("請輸入有效的正整數抽數");
+      return;
+    }
+
+    if (count == 48763) {
+      alert("星爆氣流斬");
+    } else if (count == 114514) {
+      alert("いいよ！こいよ！");
+    } else if (count > 100000) {
+      alert("抽數不能超過100000");
+      return;
+    }
+    draw(count);
+  }
+
+  // 更新獎項機率列表
+  function updateProbabilities() {
+    const probDiv = document.getElementById("probabilitiesList");
+    probDiv.innerHTML = items.map(item => {
+      const rarity = item[2];
+      const name = item[0];
+      const prob = item[1];
+      const probPercent = (prob * 100).toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
+      return `<div>[${rarity}] ${name} - ${probPercent}%</div>`;
+    }).join("");
+  }
+
+  window.onload = () => {
+    init();
+  };
+</script>
+
+</body>
+</html>
