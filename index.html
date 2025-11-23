@@ -203,7 +203,7 @@
       font-family: Consolas, Monaco, "Courier New", monospace;
       font-size: 14px;
       line-height: 1.5;
-      max-height: 600px; /* Taller on desktop */
+      max-height: 900px; /* Taller on desktop */
       overflow-y: auto;
       background: #1e1e1e; /* Dark terminal style for contrast */
       color: #e0e0e0;
@@ -294,7 +294,15 @@
         </div>
         <div class="stat-row">
           <span class="stat-label">總花費 (48NT/抽)</span>
-          <span class="stat-value" style="color: #E91E63;">$<span id="totalCost">0</span></span>
+          <span class="stat-value" style="color: #E91E63;">NT$ <span id="totalCost">0</span></span>
+        </div>
+        <!-- 新增港幣換算 -->
+        <div class="stat-row">
+          <span class="stat-label">約合港幣 (HKD)</span>
+          <span class="stat-value" style="color: #E91E63;">HK$ <span id="totalCostHKD">0</span></span>
+        </div>
+        <div style="font-size: 0.8em; color: #999; text-align: right; margin-top: 5px;">
+           即時匯率: <span id="exchangeRateDisplay">載入中...</span>
         </div>
       </div>
 
@@ -419,9 +427,15 @@
   const costPerDraw = 48;
   const stats = {};
   const recentSImages = [], recentSNames = [];
+  
+  // 新增匯率變數 (預設值 0.24，防止 API 失敗時顯示錯誤)
+  let currentExchangeRate = 0.24;
 
   // 初始化選單與預載首個獎池
   function init() {
+    // 抓取即時匯率
+    fetchExchangeRate();
+
     const select = document.getElementById("bannerSelect");
     bannersList.forEach(b => {
       const opt = document.createElement("option");
@@ -430,10 +444,31 @@
       select.appendChild(opt);
     });
     
-    
     loadBanner(currentBanner).then(() => {
       switchBanner();
     }).catch(err => alert("載入獎池失敗：" + err));
+  }
+  
+  // 新增：抓取匯率函數
+  function fetchExchangeRate() {
+    // 使用免費且通常支援 CORS 的 API
+    fetch('https://api.exchangerate-api.com/v4/latest/TWD')
+      .then(res => res.json())
+      .then(data => {
+        if(data && data.rates && data.rates.HKD) {
+          currentExchangeRate = data.rates.HKD;
+          // 更新 UI 顯示匯率
+          const rateEl = document.getElementById('exchangeRateDisplay');
+          if(rateEl) rateEl.textContent = `1 TWD ≈ ${currentExchangeRate} HKD`;
+          // 如果已經有數據，立即更新顯示
+          updateDisplay();
+        }
+      })
+      .catch(err => {
+        console.error("匯率抓取失敗", err);
+        const rateEl = document.getElementById('exchangeRateDisplay');
+        if(rateEl) rateEl.textContent = "使用預設匯率 (0.24)";
+      });
   }
 
   // fetch 載入獎池 json
@@ -540,8 +575,14 @@
 
   // 更新抽數與花費顯示
   function updateDisplay() {
-    document.getElementById("totalCost").textContent = (totalDraws * costPerDraw).toLocaleString(); // 加上千分位
+    const costTWD = totalDraws * costPerDraw;
+    document.getElementById("totalCost").textContent = costTWD.toLocaleString(); // 台幣
     document.getElementById("totalDraws").textContent = totalDraws.toLocaleString();
+    
+    // 計算並顯示港幣
+    const costHKD = costTWD * currentExchangeRate;
+    const elHKD = document.getElementById("totalCostHKD");
+    if(elHKD) elHKD.textContent = costHKD.toLocaleString(undefined, {maximumFractionDigits: 1});
   }
 
   // 顯示最近抽到的 S 道具圖片
