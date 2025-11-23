@@ -2,80 +2,340 @@
 <html lang="zh-tw">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>冰機模擬器</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
-    h1 { text-align: center; }
-    .controls { text-align: center; margin-bottom: 20px; }
-    button { margin: 5px; padding: 10px 20px; font-size: 16px; }
-    #result { white-space: pre-line; background: white; padding: 10px; border-radius: 10px; border: 1px solid #ccc; max-height: 300px; overflow-y: auto; }
-    .progress { width: 100%; background-color: #ddd; border-radius: 5px; overflow: hidden; margin-top: 20px; }
-    .progress-bar { height: 20px; background-color: #4CAF50; width: 0%; text-align: center; color: white; }
-    #summary { background: white; padding: 10px; border-radius: 10px; border: 1px solid #ccc; max-height: 300px; overflow-y: auto; margin-top: 20px; }
-    li { margin-bottom: 3px; }
-    #recentSImages {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 8px;
-      padding: 6px;
-      background: white;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      max-height: 340px;
-      overflow-x: auto;
+    :root {
+      --primary-color: #2196F3;
+      --primary-dark: #1976D2;
+      --accent-color: #00BCD4;
+      --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      --card-bg: #ffffff;
+      --text-main: #333;
+      --text-sub: #666;
+      --border-radius: 12px;
+      --shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
-    #recentSImages img {
-      width: 60px;
-      height: 60px;
-      object-fit: contain;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      background: #fff;
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', "Microsoft JhengHei", Arial, sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    /* Layout Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    /* Header Section */
+    header {
+      text-align: center;
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+
+    h1 { margin: 10px 0; color: var(--primary-dark); font-size: 1.8rem; }
+
+    .banner-selector-wrapper {
+      margin-bottom: 15px;
+    }
+
+    select#bannerSelect {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      font-size: 16px;
+      width: 100%;
+      max-width: 300px;
+      background-color: #f9f9f9;
       cursor: pointer;
     }
-    #probabilities {
-      margin-top: 40px;
-      padding: 10px;
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 10px;
+
+    /* Main Content Grid */
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
     }
-    #bannerSelect { position: absolute; top: 10px; left: 10px; }
+
+    @media (min-width: 992px) {
+      .main-content {
+        grid-template-columns: 350px 1fr; /* Left Sidebar, Right Log */
+      }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card h3 {
+      margin-top: 0;
+      border-bottom: 2px solid #f0f0f0;
+      padding-bottom: 10px;
+      font-size: 1.1rem;
+      color: var(--primary-dark);
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 15px;
+    }
+
+    button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 16px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex: 1 1 auto;
+      min-width: 80px;
+    }
+
+    button:hover {
+      background-color: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    button.btn-reset {
+      background-color: #FF5722;
+    }
+    button.btn-reset:hover { background-color: #E64A19; }
+
+    .custom-draw {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      margin-top: 10px;
+    }
+    
+    .custom-draw input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+
+    /* Progress & Stats */
+    .progress-container {
+      margin: 15px 0;
+    }
+    
+    .progress {
+      background-color: #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+      height: 24px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .progress-bar {
+      background: linear-gradient(90deg, #4CAF50, #8BC34A);
+      height: 100%;
+      line-height: 24px;
+      color: white;
+      font-weight: bold;
+      text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+      transition: width 0.3s ease;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 8px 0;
+      border-bottom: 1px dashed #eee;
+      padding-bottom: 4px;
+    }
+    .stat-label { color: var(--text-sub); }
+    .stat-value { font-weight: bold; color: var(--text-main); }
+
+    /* Inventory (Recent S) */
+    #recentSImages {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+      gap: 8px;
+      max-height: 250px;
+      overflow-y: auto;
+      padding: 5px;
+      background: #fafafa;
+      border-radius: 8px;
+    }
+
+    #recentSImages img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: contain;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      transition: transform 0.2s;
+    }
+    #recentSImages img:hover { transform: scale(1.1); z-index: 10; }
+
+    /* Result Log */
+    #result {
+      white-space: pre-line;
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 14px;
+      line-height: 1.5;
+      max-height: 600px; /* Taller on desktop */
+      overflow-y: auto;
+      background: #1e1e1e; /* Dark terminal style for contrast */
+      color: #e0e0e0;
+      padding: 15px;
+      border-radius: 8px;
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #aaa; }
+
+    /* Probability List */
+    #probabilities {
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 0.9rem;
+    }
+    #probabilitiesList div {
+      padding: 4px 0;
+      border-bottom: 1px solid #eee;
+    }
+    
+    #summary li {
+        list-style: none;
+        padding: 5px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    #summary { padding-left: 0; }
+
   </style>
 </head>
 <body>
-  <select id="bannerSelect" onchange="switchBanner()"></select>
-  <h1 id="bannerTitle">冰機模擬器</h1>
-  <div class="controls">
-    <button onclick="draw(1)">單抽</button>
-    <button onclick="draw(10)">10連抽</button>
-    <button onclick="draw(30)">30連抽</button>
-    <button onclick="draw(100)">100連抽</button>
-    <button onclick="resetAll()">🔄 重置</button>
+
+<div class="container">
+  
+  <!-- Header: Select & Title -->
+  <header>
+    <div class="banner-selector-wrapper">
+      <select id="bannerSelect" onchange="switchBanner()"></select>
+    </div>
+    <h1 id="bannerTitle">冰機模擬器</h1>
+  </header>
+
+  <div class="main-content">
+    
+    <!-- Left Column: Controls & Stats -->
+    <div class="left-panel">
+      
+      <!-- Control Panel -->
+      <div class="card">
+        <h3>操作面板</h3>
+        <div class="controls">
+          <button onclick="draw(1)">單抽</button>
+          <button onclick="draw(10)">10連</button>
+          <button onclick="draw(30)">30連</button>
+          <button onclick="draw(100)">100連</button>
+        </div>
+        
+        <div class="custom-draw">
+          <input type="number" id="customDrawCount" placeholder="輸入自訂抽數" min="1" />
+          <button onclick="drawCustom()" style="flex: 0 0 auto;">連抽</button>
+        </div>
+        
+        <div style="margin-top: 15px;">
+           <button class="btn-reset" onclick="resetAll()" style="width: 100%">🔄 重置模擬器</button>
+        </div>
+      </div>
+
+      <!-- Stats Panel -->
+      <div class="card">
+        <h3>統計資訊</h3>
+        <div class="progress-container">
+          <div style="margin-bottom: 5px; font-size: 0.9em; color: #666;">保底進度</div>
+          <div class="progress">
+            <div class="progress-bar" id="pityBar">0%</div>
+          </div>
+        </div>
+        
+        <div class="stat-row">
+          <span class="stat-label">保底次數</span>
+          <span class="stat-value" id="pityCount">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">累積抽數</span>
+          <span class="stat-value"><span id="totalDraws">0</span> 次</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">總花費 (48NT/抽)</span>
+          <span class="stat-value" style="color: #E91E63;">$<span id="totalCost">0</span></span>
+        </div>
+      </div>
+
+      <!-- S-Rank Inventory -->
+      <div class="card">
+        <h3>獲得的 [S] 道具</h3>
+        <div id="recentSImages"></div>
+      </div>
+
+      <!-- Item Stats Summary -->
+      <div class="card">
+        <h3>獎項統計</h3>
+        <ul id="summary" style="max-height: 200px; overflow-y: auto;"></ul>
+      </div>
+      
+       <!-- Probabilities -->
+      <div class="card">
+        <h3>機率一覽</h3>
+        <div id="probabilities">
+          <div id="probabilitiesList"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Log -->
+    <div class="right-panel">
+      <div class="card" style="height: 100%; display: flex; flex-direction: column;">
+        <h3>抽取紀錄</h3>
+        <!-- 使用 flex-grow 讓 log 佔滿剩餘空間 -->
+        <div id="result" style="flex-grow: 1;"></div>
+      </div>
+    </div>
+
   </div>
-  <div class="controls">
-    <input type="number" id="customDrawCount" placeholder="輸入抽數" min="1" style="width: 80px; margin-left: 10px;" />
-    <button onclick="drawCustom()">連抽</button>
-  </div>
-  <div class="progress">
-    <div class="progress-bar" id="pityBar">0%</div>
-  </div>
-  <p>保底次數：<span id="pityCount">0</span></p>
-  <p>累積抽數：<span id="totalDraws">0</span> 次</p>
-  <p>總花費：<span id="totalCost">0</span> 元 (48NT/抽)</p>
-  <h3>獲得的[S]道具</h3>
-  <div id="recentSImages"></div>
-  <h3>抽取紀錄</h3>
-  <div id="result"></div>
-  <h3>各獎項獲得次數統計</h3>
-  <ul id="summary"></ul>
-  <h3>各獎項機率</h3>
-  <div id="probabilities">
-    <ul id="probabilitiesList"></ul>
-  </div>
+</div>
 
 <script>
+  // 保持原有的 JavaScript 邏輯完全不變
+  // ------------------------------------
+  
   // 獎池名稱列表（檔名，對應 banners/*.json）
   const bannersList = [
   "猛虎奇談", 
@@ -86,7 +346,7 @@
 //"飛龍乘雲",
   "時光陀飛輪",
   "腥紅噩夢",
-/*  "以太貴族",
+/* "以太貴族",
   "暗影獵手",
   "夢幻自動人形",
   "薔薇魔法使",
@@ -169,8 +429,8 @@
       opt.textContent = b;
       select.appendChild(opt);
     });
-	
-	
+    
+    
     loadBanner(currentBanner).then(() => {
       switchBanner();
     }).catch(err => alert("載入獎池失敗：" + err));
@@ -218,16 +478,17 @@
         recentSImages.unshift(item[3]);
         recentSNames.unshift(item[0]);
       }
+      // 優化了一下 log 的顯示樣式，增加可讀性
       let line = item[2] === "S"
-        ? `<span style="color:red;">第${totalDraws}抽：[${item[2]}]${item[0]}</span>`
-        : `第${totalDraws}抽：[${item[2]}]${item[0]}`;
+        ? `<span style="color:#FFD700; font-weight:bold;">第${totalDraws}抽：[${item[2]}] ${item[0]}</span>` // 金色顯示S
+        : `第${totalDraws}抽：[${item[2]}] ${item[0]}`;
       resultArr.push(line);
       pity += pityRates[item[2]];
       stats[item[0]] = (stats[item[0]] || 0) + 1;
       if (pity >= 100) {
         pity = 0;
         pityCount++;
-        resultArr.push(`<span style="color:blue;">【保底${pityCount}次達成！】🎉</span>`);
+        resultArr.push(`<span style="color:#4FC3F7; font-weight:bold;">【保底${pityCount}次達成！】🎉</span>`);
       }
     }
 
@@ -269,7 +530,9 @@
       const count = stats[name];
       if (count > 0) {
         const li = document.createElement("li");
-        li.textContent = `[${rarity}] ${name} × ${count}`;
+        // 簡單區分顏色
+        let color = rarity === 'S' ? '#E65100' : rarity === 'A' ? '#1565C0' : '#333';
+        li.innerHTML = `<span style="color:${color}; font-weight:bold;">[${rarity}]</span> ${name} <span style="float:right">× ${count}</span>`;
         summary.appendChild(li);
       }
     }
@@ -277,8 +540,8 @@
 
   // 更新抽數與花費顯示
   function updateDisplay() {
-    document.getElementById("totalCost").textContent = totalDraws * costPerDraw;
-    document.getElementById("totalDraws").textContent = totalDraws;
+    document.getElementById("totalCost").textContent = (totalDraws * costPerDraw).toLocaleString(); // 加上千分位
+    document.getElementById("totalDraws").textContent = totalDraws.toLocaleString();
   }
 
   // 顯示最近抽到的 S 道具圖片
@@ -331,7 +594,7 @@
       const name = item[0];
       const prob = item[1];
       const probPercent = (prob * 100).toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
-      return `<div>[${rarity}] ${name} - ${probPercent}%</div>`;
+      return `<div><span style="font-weight:bold; color:${rarity==='S'?'#E65100':'#555'}">[${rarity}]</span> ${name} <span style="float:right; color:#888">${probPercent}%</span></div>`;
     }).join("");
   }
 
