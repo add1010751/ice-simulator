@@ -8,10 +8,10 @@
 		  ["真我假面鞋子箱", 0.0165, "S", "image/VeritasPersona/5.png"],
 		  ["真我假面髮型箱", 0.0045, "S", "image/VeritasPersona/6.png"],
 		  ["真我假面特異髮型箱", 0.0045, "S", "image/VeritasPersona/7.png"],
-		  ["真我假面飾品(下衣)箱", 0.0045, "S", "image/VeritasPersona/8.png"],
+		  ["真我假面飾品(下衣)箱", 0.0055, "S", "image/VeritasPersona/8.png"],
 		  ["真我假面飾品(臉下)箱", 0.005, "S", "image/VeritasPersona/9.png"],
-		  ["真我假面飾品(耳環)箱", 0.0035, "S", "image/VeritasPersona/10.png"],
-		  ["真我假面飾品(武器)箱", 0.0025, "S", "image/VeritasPersona/11.png"],
+		  ["真我假面飾品(耳環)箱", 0.004, "S", "image/VeritasPersona/10.png"],
+		  ["真我假面飾品(武器)箱", 0.001, "S", "image/VeritasPersona/11.png"],
 		  
 		  ["武器專用強化符咒Lv.10", 0.00001, "S", "image/Common/1.png"],
 		  ["防具專用強化符咒Lv.10", 0.00001, "S", "image/Common/2.png"],
